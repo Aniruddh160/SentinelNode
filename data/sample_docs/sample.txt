@@ -1,0 +1,1 @@
+SentinelNode is an enterprise-grade RAG system designed for technical discovery.

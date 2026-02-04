@@ -1,0 +1,11 @@
+# Core RAG
+langchain
+sentence-transformers
+faiss-cpu
+
+# Document parsing
+pypdf
+
+# Utilities
+python-dotenv
+tqdm
