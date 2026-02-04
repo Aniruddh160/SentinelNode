@@ -1,9 +1,13 @@
+from utils.silence import *
+
 import os
 
 from ingestion.loader import load_documents
 from ingestion.chunker import chunk_documents
 from embeddings.embedder import Embedder
 from embeddings.vector_store import VectorStore
+from llm.synthesizer import AnswerSynthesizer
+
 
 
 # ---- Paths ----
@@ -48,7 +52,11 @@ query_embedding = embedder.embed_query(query)
 
 results = vector_store.search(query_embedding, top_k=3)
 
-print("\nTop results:")
-for res in results:
-    print(f"\nScore: {res['score']:.4f}")
-    print(res["text"])
+synthesizer = AnswerSynthesizer()
+
+contexts = [res["text"] for res in results]
+answer = synthesizer.synthesize(query, contexts)
+
+print("\nFinal Answer:\n")
+print(answer)
+

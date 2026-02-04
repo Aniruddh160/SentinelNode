@@ -13,18 +13,24 @@ class VectorStore:
         self.index.add(embeddings)
         self.metadata.extend(metadatas)
 
-    def search(self, query_embedding: np.ndarray, top_k: int = 5):
-        scores, indices = self.index.search(
-            np.array([query_embedding]), top_k
-        )
+    def search(self, query_embedding, top_k=3):
+    # Force FAISS-safe shape: (1, dim)
+        query_embedding = np.asarray(query_embedding)
+
+        if query_embedding.ndim > 2:
+            query_embedding = query_embedding.reshape(1, -1)
+
+        if query_embedding.ndim == 1:
+            query_embedding = query_embedding.reshape(1, -1)
+
+        scores, indices = self.index.search(query_embedding, top_k)
 
         results = []
         for score, idx in zip(scores[0], indices[0]):
-            if idx == -1:
-                continue
-            item = self.metadata[idx].copy()
-            item["score"] = float(score)
-            results.append(item)
+            results.append({
+                "score": float(score),
+                "text": self.metadata[idx]["text"]
+            })
 
         return results
 
