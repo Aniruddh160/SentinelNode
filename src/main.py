@@ -1,13 +1,14 @@
 from utils.silence import *
 
 import os
+from collections import defaultdict
 
 from ingestion.loader import load_documents
 from ingestion.chunker import chunk_documents
 from embeddings.embedder import Embedder
 from embeddings.vector_store import VectorStore
 from llm.synthesizer import AnswerSynthesizer
-
+from retrieval.bm25 import BM25Index
 
 
 # ---- Paths ----
@@ -22,8 +23,7 @@ META_PATH = os.path.join(INDEX_DIR, "sentinel_meta.pkl")
 # ---- Initialize ----
 embedder = Embedder()
 
-# We know embedding dim from the model
-embedding_dim = embedder.embed_query("test").shape[0]
+embedding_dim = embedder.embed_query("test").shape[1]
 vector_store = VectorStore(embedding_dim)
 
 
@@ -31,6 +31,7 @@ vector_store = VectorStore(embedding_dim)
 if os.path.exists(FAISS_INDEX_PATH) and os.path.exists(META_PATH):
     print("Loading existing FAISS index...")
     vector_store.load(FAISS_INDEX_PATH, META_PATH)
+    chunks = vector_store.metadata  # needed for BM25
 
 else:
     print("Building FAISS index...")
@@ -46,17 +47,50 @@ else:
     print("Index built and saved.")
 
 
+# ---- Build BM25 Index ----
+chunk_texts = [c["text"] for c in chunks]
+bm25 = BM25Index(chunk_texts)
+
+
+# ---- Hybrid Re-ranker ----
+def hybrid_rerank(vector_results, bm25_results, alpha=0.6):
+    scores = defaultdict(float)
+    texts = {}
+
+    if vector_results:
+        max_v = max(r["score"] for r in vector_results) or 1.0
+        for r in vector_results:
+            scores[r["text"]] += alpha * (r["score"] / max_v)
+            texts[r["text"]] = r["text"]
+
+    if bm25_results:
+        max_b = max(r["score"] for r in bm25_results) or 1.0
+        for r in bm25_results:
+            scores[r["text"]] += (1 - alpha) * (r["score"] / max_b)
+            texts[r["text"]] = r["text"]
+
+    ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    return [{"text": t, "score": s} for t, s in ranked]
+
+
 # ---- Query ----
 query = "What is SentinelNode?"
+
+# Vector search
 query_embedding = embedder.embed_query(query)
+vector_results = vector_store.search(query_embedding, top_k=5)
 
-results = vector_store.search(query_embedding, top_k=3)
+# BM25 search
+bm25_results = bm25.search(query, top_k=5)
 
+# Hybrid merge
+hybrid_results = hybrid_rerank(vector_results, bm25_results, alpha=0.6)
+
+contexts = [r["text"] for r in hybrid_results[:5]]
+
+# ---- LLM Synthesis ----
 synthesizer = AnswerSynthesizer()
-
-contexts = [res["text"] for res in results]
 answer = synthesizer.synthesize(query, contexts)
 
 print("\nFinal Answer:\n")
 print(answer)
-
