@@ -10,6 +10,8 @@ from embeddings.vector_store import VectorStore
 from llm.synthesizer import AnswerSynthesizer
 from retrieval.bm25 import BM25Index
 from retrieval.graph import GraphIndex
+from structure.graph_layer import graph_aware_retrieval
+
 
 
 # ---- Paths ----
@@ -80,13 +82,31 @@ def hybrid_rerank(vector_results, bm25_results, alpha=0.6):
 
 
 # ---- Query ----
-query = "How does graph-aware retrieval improve answer quality?"
+query = "what is core architecture"
+
+# ---- Graph-aware retrieval (NEW) ----
+graph_result = graph_aware_retrieval(query, chunks)
+
+graph_chunk_ids = graph_result.get("chunk_ids", [])
+
+# If graph returned chunks, restrict search space
+if graph_chunk_ids:
+    graph_chunks = [c for c in chunks if c["chunk_id"] in graph_chunk_ids]
+else:
+    graph_chunks = chunks
 
 # Vector search
 query_embedding = embedder.embed_query(query)
 vector_results = vector_store.search(query_embedding, top_k=5)
+if graph_chunk_ids:
+    vector_results = [
+        r for r in vector_results
+        if r.get("chunk_id") in graph_chunk_ids
+    ]
+
 
 # BM25 search
+bm25 = BM25Index([c["text"] for c in graph_chunks])
 bm25_results = bm25.search(query, top_k=5)
 
 # Hybrid merge
@@ -97,6 +117,9 @@ contexts = [r["text"] for r in hybrid_results[:5]]
 # ---- LLM Synthesis ----
 synthesizer = AnswerSynthesizer()
 answer = synthesizer.synthesize(query, contexts)
+
+print("\nRetrieval Strategy:", graph_result.get("strategy"))
+print("Graph Chunk IDs:", graph_chunk_ids)
 
 print("\nFinal Answer:\n")
 print(answer)
