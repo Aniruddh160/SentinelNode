@@ -1,1 +1,35 @@
-SentinelNode is an enterprise-grade RAG system designed for technical discovery.
+SentinelNode Overview
+SentinelNode is an enterprise-grade Retrieval-Augmented Generation (RAG) system designed for automated technical discovery in large codebases and documentation repositories.
+
+The primary goal of SentinelNode is to help engineers, architects, and auditors quickly understand unfamiliar systems by answering natural language questions grounded in source documents.
+
+
+Core Architecture
+SentinelNode consists of four major layers: ingestion, retrieval, reasoning, and synthesis.
+
+The ingestion layer is responsible for loading documents, splitting them into chunks, and generating embeddings. Chunking ensures that long documents are broken into semantically meaningful segments.
+
+The retrieval layer combines vector-based semantic search with lexical search techniques such as BM25. This hybrid approach allows SentinelNode to handle both conceptual queries and exact keyword-based queries.
+
+The reasoning layer enriches retrieval by using graph-aware context expansion. Related chunks from the same document or adjacent sections are included to preserve continuity.
+
+The synthesis layer uses a large language model to generate concise, grounded answers strictly from retrieved context.
+
+
+Hybrid Retrieval Strategy
+Hybrid retrieval is critical for enterprise use cases. Vector search excels at capturing semantic similarity but often struggles with exact identifiers, acronyms, and technical terms.
+
+BM25 complements vector search by prioritizing exact term matches. SentinelNode merges both scores using weighted re-ranking to produce higher quality retrieval results.
+
+
+Graph-Aware Retrieval
+Graph-aware retrieval improves answer completeness by linking chunks within the same document.
+
+When a relevant chunk is retrieved, SentinelNode expands the context by including neighboring chunks. This allows the system to answer questions that require understanding surrounding explanations rather than isolated sentences.
+
+
+Evaluation and Reliability
+SentinelNode emphasizes reliability and auditability. If the answer to a question is not present in the indexed documents, the system responds with "I don't know" instead of hallucinating.
+
+Future evaluation metrics include Recall@K and Precision@K to quantitatively measure retrieval quality.
+

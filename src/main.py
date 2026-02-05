@@ -9,6 +9,7 @@ from embeddings.embedder import Embedder
 from embeddings.vector_store import VectorStore
 from llm.synthesizer import AnswerSynthesizer
 from retrieval.bm25 import BM25Index
+from retrieval.graph import GraphIndex
 
 
 # ---- Paths ----
@@ -41,8 +42,12 @@ else:
     texts = [chunk["text"] for chunk in chunks]
     embeddings = embedder.embed_texts(texts)
 
+    # Ensure index directory exists
+    os.makedirs(INDEX_DIR, exist_ok=True)
+
     vector_store.add(embeddings, chunks)
     vector_store.save(FAISS_INDEX_PATH, META_PATH)
+
 
     print("Index built and saved.")
 
@@ -50,6 +55,7 @@ else:
 # ---- Build BM25 Index ----
 chunk_texts = [c["text"] for c in chunks]
 bm25 = BM25Index(chunk_texts)
+graph = GraphIndex(chunks)
 
 
 # ---- Hybrid Re-ranker ----
@@ -74,7 +80,7 @@ def hybrid_rerank(vector_results, bm25_results, alpha=0.6):
 
 
 # ---- Query ----
-query = "What is SentinelNode?"
+query = "How does graph-aware retrieval improve answer quality?"
 
 # Vector search
 query_embedding = embedder.embed_query(query)
@@ -94,3 +100,4 @@ answer = synthesizer.synthesize(query, contexts)
 
 print("\nFinal Answer:\n")
 print(answer)
+print(chunks[0])

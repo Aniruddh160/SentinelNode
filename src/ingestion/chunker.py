@@ -70,4 +70,8 @@ def chunk_documents(
                 "end_token": chunk["end_token"]
             })
 
+    for i, chunk in enumerate(all_chunks):
+        chunk["chunk_id"] = i
+
+
     return all_chunks
