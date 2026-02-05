@@ -11,6 +11,9 @@ from llm.synthesizer import AnswerSynthesizer
 from retrieval.bm25 import BM25Index
 from retrieval.graph import GraphIndex
 from structure.graph_layer import graph_aware_retrieval
+from evaluation.strategy_logger import log_strategy
+from evaluation.graph_utility import compute_graph_utility
+from evaluation.grounding import compute_grounding_coverage
 
 
 
@@ -82,7 +85,7 @@ def hybrid_rerank(vector_results, bm25_results, alpha=0.6):
 
 
 # ---- Query ----
-query = "what is core architecture"
+query = "Explain ingestion layer"
 
 # ---- Graph-aware retrieval (NEW) ----
 graph_result = graph_aware_retrieval(query, chunks)
@@ -95,6 +98,13 @@ if graph_chunk_ids:
 else:
     graph_chunks = chunks
 
+log_strategy(
+    query=query,
+    strategy=graph_result.get("strategy"),
+    chunk_ids=graph_chunk_ids
+)
+
+
 # Vector search
 query_embedding = embedder.embed_query(query)
 vector_results = vector_store.search(query_embedding, top_k=5)
@@ -103,6 +113,21 @@ if graph_chunk_ids:
         r for r in vector_results
         if r.get("chunk_id") in graph_chunk_ids
     ]
+def extract_chunk_id(result):
+    if "chunk_id" in result:
+        return result["chunk_id"]
+    if "metadata" in result and "chunk_id" in result["metadata"]:
+        return result["metadata"]["chunk_id"]
+    if "id" in result:
+        return result["id"]
+    return None
+
+
+vector_chunk_ids = [
+    extract_chunk_id(r)
+    for r in vector_results
+    if extract_chunk_id(r) is not None
+]
 
 
 # BM25 search
@@ -117,6 +142,19 @@ contexts = [r["text"] for r in hybrid_results[:5]]
 # ---- LLM Synthesis ----
 synthesizer = AnswerSynthesizer()
 answer = synthesizer.synthesize(query, contexts)
+grounding = compute_grounding_coverage(answer, contexts)
+
+print("\nGrounding Coverage:")
+print(grounding)
+
+
+
+utility = compute_graph_utility(
+    graph_chunks=graph_chunk_ids,
+    vector_chunks=vector_chunk_ids
+)
+
+print("Graph Utility:", utility)
 
 print("\nRetrieval Strategy:", graph_result.get("strategy"))
 print("Graph Chunk IDs:", graph_chunk_ids)
