@@ -34,28 +34,29 @@ def normalize_text(text: str) -> str:
 
 def load_documents(data_dir: str) -> List[Dict]:
     """
-    Load all supported documents from a directory.
+    Load all supported documents recursively from a directory.
     Returns a list of dicts with doc_id, source, and text.
     """
     documents = []
 
-    for filename in os.listdir(data_dir):
-        file_path = os.path.join(data_dir, filename)
+    for root, _, files in os.walk(data_dir):
+        for filename in files:
+            file_path = os.path.join(root, filename)
 
-        if filename.lower().endswith(".txt"):
-            text = load_text_file(file_path)
+            if filename.lower().endswith((".txt", ".md")):
+                text = load_text_file(file_path)
 
-        elif filename.lower().endswith(".pdf"):
-            text = load_pdf_file(file_path)
+            elif filename.lower().endswith(".pdf"):
+                text = load_pdf_file(file_path)
 
-        else:
-            continue  # unsupported file type
+            else:
+                continue
 
-        if text:
-            documents.append({
-                "doc_id": os.path.splitext(filename)[0],
-                "source": filename,
-                "text": text
-            })
+            if text:
+                documents.append({
+                    "doc_id": os.path.splitext(filename)[0],
+                    "source": file_path,
+                    "text": text
+                })
 
     return documents

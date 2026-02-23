@@ -48,9 +48,13 @@ else:
     from ingestion.unified_ingestion import build_unified_chunks
 
     chunks = build_unified_chunks(
-        doc_path="data/sample_docs",
-        code_path="src"
+        doc_path="test_repo",
+        code_path="test_repo/src"
     )
+
+    print("\n--- CHUNK SOURCE BREAKDOWN ---")
+    from collections import Counter
+    print(Counter([c["source_type"] for c in chunks]))
 
 
     texts = [chunk["text"] for chunk in chunks]
@@ -102,7 +106,7 @@ def extract_chunk_id(result):
     return None
 
 # ---- Query ----
-query = "How do graph databases improve retrieval systems?"
+query = "Does authentication comply with security policy?"
 
 # ---- Graph-aware retrieval (NEW) ----
 graph_result = graph_aware_retrieval(query, chunks)
