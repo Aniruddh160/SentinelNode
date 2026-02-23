@@ -1,0 +1,3 @@
+Vector databases store embeddings for semantic retrieval.
+ FAISS is commonly used for efficient nearest neighbor search.
+ Hybrid retrieval combines vector search with lexical scoring such as BM25.

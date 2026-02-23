@@ -1,9 +1,0 @@
-{"timestamp": "2026-02-05T12:56:55.106018", "query": "How does graph-aware retrieval improve answer quality?", "strategy": "graph_aware", "num_chunks": 5, "chunk_ids": [0, 1, 2, 3, 4]}
-{"timestamp": "2026-02-05T12:59:30.187829", "query": "How does SentinelNode use RAG?", "strategy": "graph_aware", "num_chunks": 5, "chunk_ids": [0, 1, 2, 3, 4]}
-{"timestamp": "2026-02-05T13:00:31.950711", "query": "Explain ingestion layer", "strategy": "vector_only", "num_chunks": 0, "chunk_ids": []}
-{"timestamp": "2026-02-05T13:38:10.949057", "query": "Explain ingestion layer", "strategy": "vector_only", "num_chunks": 0, "chunk_ids": []}
-{"timestamp": "2026-02-05T13:40:23.485788", "query": "Explain ingestion layer", "strategy": "vector_only", "num_chunks": 0, "chunk_ids": []}
-{"timestamp": "2026-02-05T15:13:36.052914", "query": "Explain ingestion layer", "strategy": "vector_only", "num_chunks": 0, "chunk_ids": []}
-{"timestamp": "2026-02-05T15:25:57.737091", "query": "Explain ingestion layer", "strategy": "vector_only", "num_chunks": 0, "chunk_ids": []}
-{"timestamp": "2026-02-05T15:26:56.952686", "query": "Explain ingestion layer", "strategy": "vector_only", "num_chunks": 0, "chunk_ids": []}
-{"timestamp": "2026-02-05T15:39:08.671269", "query": "Explain ingestion layer", "strategy": "vector_only", "num_chunks": 0, "chunk_ids": []}

@@ -37,12 +37,21 @@ vector_store = VectorStore(embedding_dim)
 if os.path.exists(FAISS_INDEX_PATH) and os.path.exists(META_PATH):
     print("Loading existing FAISS index...")
     vector_store.load(FAISS_INDEX_PATH, META_PATH)
-    chunks = vector_store.metadata  # needed for BM25
+    chunks = vector_store.metadata
+
+    # safety check
+    if not chunks or "chunk_id" not in chunks[0]:
+        raise ValueError("Metadata corrupted or outdated. Delete index folder.")
 
 else:
     print("Building FAISS index...")
-    docs = load_documents(DATA_DIR)
-    chunks = chunk_documents(docs, chunk_size=128, chunk_overlap=32)
+    from ingestion.unified_ingestion import build_unified_chunks
+
+    chunks = build_unified_chunks(
+        doc_path="data/sample_docs",
+        code_path="src"
+    )
+
 
     texts = [chunk["text"] for chunk in chunks]
     embeddings = embedder.embed_texts(texts)
@@ -59,7 +68,7 @@ else:
 
 # ---- Build BM25 Index ----
 chunk_texts = [c["text"] for c in chunks]
-bm25 = BM25Index(chunk_texts)
+
 graph = GraphIndex(chunks)
 
 
@@ -83,14 +92,23 @@ def hybrid_rerank(vector_results, bm25_results, alpha=0.6):
     ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     return [{"text": t, "score": s} for t, s in ranked]
 
+def extract_chunk_id(result):
+    if "chunk_id" in result:
+        return result["chunk_id"]
+    if "metadata" in result and "chunk_id" in result["metadata"]:
+        return result["metadata"]["chunk_id"]
+    if "id" in result:
+        return result["id"]
+    return None
 
 # ---- Query ----
-query = "Explain ingestion layer"
+query = "How do graph databases improve retrieval systems?"
 
 # ---- Graph-aware retrieval (NEW) ----
 graph_result = graph_aware_retrieval(query, chunks)
 
-graph_chunk_ids = graph_result.get("chunk_ids", [])
+chunk_scores = graph_result.get("chunk_scores", {})
+graph_chunk_ids = list(chunk_scores.keys())
 
 # If graph returned chunks, restrict search space
 if graph_chunk_ids:
@@ -110,17 +128,10 @@ query_embedding = embedder.embed_query(query)
 vector_results = vector_store.search(query_embedding, top_k=5)
 if graph_chunk_ids:
     vector_results = [
-        r for r in vector_results
-        if r.get("chunk_id") in graph_chunk_ids
-    ]
-def extract_chunk_id(result):
-    if "chunk_id" in result:
-        return result["chunk_id"]
-    if "metadata" in result and "chunk_id" in result["metadata"]:
-        return result["metadata"]["chunk_id"]
-    if "id" in result:
-        return result["id"]
-    return None
+    r for r in vector_results
+    if extract_chunk_id(r) in graph_chunk_ids
+]
+
 
 
 vector_chunk_ids = [
@@ -137,7 +148,16 @@ bm25_results = bm25.search(query, top_k=5)
 # Hybrid merge
 hybrid_results = hybrid_rerank(vector_results, bm25_results, alpha=0.6)
 
-contexts = [r["text"] for r in hybrid_results[:5]]
+if not hybrid_results:
+    # Fallback safety
+    vector_results = vector_store.search(query_embedding, top_k=5)
+    contexts = [r["text"] for r in vector_results]
+else:
+    contexts = [r["text"] for r in hybrid_results[:5]]
+
+print("\nDEBUG: Contexts passed to LLM:")
+for c in contexts:
+    print("-", c)
 
 # ---- LLM Synthesis ----
 synthesizer = AnswerSynthesizer()

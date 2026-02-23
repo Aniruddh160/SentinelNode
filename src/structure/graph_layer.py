@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 import networkx as nx
-
-# -----------------------------
+import re
+# ==============================
 # Entity & Relation Definitions
-# -----------------------------
+# ==============================
 
 @dataclass
 class Entity:
@@ -18,11 +18,12 @@ class Relation:
     source: str
     relation: str
     target: str
+    weight: float  # NEW: weighted relations
 
 
-# -----------------------------
-# Entity Registry (Manual, Deterministic)
-# -----------------------------
+# ==============================
+# Entity Registry
+# ==============================
 
 ENTITIES = [
     Entity("E1", "SentinelNode", "System", ["sentinelnode"]),
@@ -31,27 +32,29 @@ ENTITIES = [
     Entity("E4", "Retrieval Layer", "Component", ["retrieval layer", "retrieval"]),
     Entity("E5", "LLM", "Model", ["llm", "large language model"]),
     Entity("E6", "Vector Database", "Component", ["vector database", "faiss"]),
-    Entity("E7", "Graph Database", "Component", ["graph database", "graph"]),
+    Entity("E7", "Graph Database", "Technology", ["graph database"]),
+    Entity("E8", "Graph-aware Retrieval", "Technique", ["graph-aware retrieval"])
+
+
 ]
 
 
-# -----------------------------
-# Relations (Manual, Explicit)
-# -----------------------------
+# ==============================
+# Weighted Relations
+# ==============================
 
 RELATIONS = [
-    Relation("E1", "uses", "E2"),
-    Relation("E1", "has_layer", "E3"),
-    Relation("E1", "has_layer", "E4"),
-    Relation("E4", "uses", "E6"),
-    Relation("E1", "integrates", "E7"),
-    Relation("E2", "reduces", "E5"),
+    Relation("E1", "has_layer", "E3", 0.9),
+    Relation("E1", "has_layer", "E4", 0.9),
+    Relation("E4", "uses", "E6", 0.7),
+    Relation("E1", "integrates", "E7", 0.6),
+    Relation("E2", "reduces", "E5", 0.4),
 ]
 
 
-# -----------------------------
+# ==============================
 # Entity → Chunk Mapping
-# -----------------------------
+# ==============================
 
 def map_entities_to_chunk(chunk_text: str, entities: list[Entity]) -> list[str]:
     text = chunk_text.lower()
@@ -59,7 +62,7 @@ def map_entities_to_chunk(chunk_text: str, entities: list[Entity]) -> list[str]:
 
     for e in entities:
         for alias in e.aliases:
-            if alias in text:
+            if re.search(rf"\b{re.escape(alias)}\b", text):
                 found.append(e.id)
                 break
 
@@ -77,9 +80,9 @@ def build_entity_chunk_map(chunks: list[dict], entities: list[Entity]) -> dict:
     return entity_chunk_map
 
 
-# -----------------------------
+# ==============================
 # Graph Construction
-# -----------------------------
+# ==============================
 
 def build_graph(entities: list[Entity], relations: list[Relation]) -> nx.DiGraph:
     graph = nx.DiGraph()
@@ -88,51 +91,83 @@ def build_graph(entities: list[Entity], relations: list[Relation]) -> nx.DiGraph
         graph.add_node(e.id, name=e.name, type=e.type)
 
     for r in relations:
-        graph.add_edge(r.source, r.target, relation=r.relation)
+        graph.add_edge(
+            r.source,
+            r.target,
+            relation=r.relation,
+            weight=r.weight  # store weight on edge
+        )
 
     return graph
 
 
-# -----------------------------
-# Graph Traversal → Chunk Resolution
-# -----------------------------
+# ==============================
+# Intent-Based Traversal Mode
+# ==============================
 
-def traverse_graph(graph: nx.DiGraph, start_entities: list[str], depth: int = 2):
+def determine_traversal_mode(query: str) -> str:
+    q = query.lower()
+
+    if "architecture" in q or "core" in q:
+        return "structural"
+
+    if "how" in q or "why" in q:
+        return "causal"
+
+    return "default"
+
+
+# ==============================
+# Weighted Traversal
+# ==============================
+
+def weighted_traverse(graph, start_entities, mode="default"):
     paths = []
 
-    for eid in start_entities:
-        for target, path in nx.single_source_shortest_path(
-            graph, eid, cutoff=depth
-        ).items():
-            paths.append(path)
+    for source in start_entities:
+        for neighbor in graph.successors(source):
+            edge_data = graph.get_edge_data(source, neighbor)
+            weight = edge_data.get("weight", 0.5)
+
+            if mode == "structural" and weight >= 0.8:
+                paths.append([source, neighbor])
+
+            elif mode == "causal" and weight >= 0.6:
+                paths.append([source, neighbor])
+
+            elif mode == "default" and weight >= 0.5:
+                paths.append([source, neighbor])
 
     return paths
 
 
-def resolve_chunks_from_paths(
-    paths: list[list[str]],
-    entity_chunk_map: dict
-) -> list[int]:
-    chunks = set()
+# ==============================
+# Chunk Resolution
+# ==============================
 
-    for path in paths:
+def resolve_chunks_with_scores(scored_paths, entity_chunk_map):
+    """
+    Returns dict:
+        chunk_id -> max path score reaching it
+    """
+    chunk_scores = {}
+
+    for path, score in scored_paths:
         for entity_id in path:
-            chunks.update(entity_chunk_map.get(entity_id, []))
+            chunk_ids = entity_chunk_map.get(entity_id, [])
+            for cid in chunk_ids:
+                if cid not in chunk_scores:
+                    chunk_scores[cid] = score
+                else:
+                    chunk_scores[cid] = max(chunk_scores[cid], score)
 
-    return sorted(list(chunks))
-
-
-# -----------------------------
-# Intent Routing (Simple & Correct)
-# -----------------------------
-
-GRAPH_TRIGGERS = ["how", "why", "relationship", "connected", "depends", "architecture"]
+    return chunk_scores
 
 
-def needs_graph(query: str) -> bool:
-    q = query.lower()
-    return any(word in q for word in GRAPH_TRIGGERS)
 
+# ==============================
+# Query Entity Extraction
+# ==============================
 
 def extract_query_entities(query: str, entities: list[Entity]) -> list[str]:
     q = query.lower()
@@ -147,35 +182,62 @@ def extract_query_entities(query: str, entities: list[Entity]) -> list[str]:
     return found
 
 
-# -----------------------------
-# MAIN GRAPH-AWARE RETRIEVAL LOGIC
-# -----------------------------
+# ==============================
+# Graph-Aware Retrieval Entry
+# ==============================
 
 def graph_aware_retrieval(query: str, chunks: list[dict]):
-    # Build structures
     entity_chunk_map = build_entity_chunk_map(chunks, ENTITIES)
     graph = build_graph(ENTITIES, RELATIONS)
 
-    if not needs_graph(query):
-        return {
-            "strategy": "vector_only",
-            "chunk_ids": [],
-        }
-
     query_entities = extract_query_entities(query, ENTITIES)
+    mode = determine_traversal_mode(query)
+
+    # Structural fallback only if no explicit entity
+    if not query_entities and mode == "structural":
+        query_entities = ["E1"]  # SentinelNode root
 
     if not query_entities:
         return {
-            "strategy": "fallback_vector",
-            "chunk_ids": [],
+            "strategy": "vector_only",
+            "chunk_scores": {}
         }
 
-    paths = traverse_graph(graph, query_entities)
-    chunk_ids = resolve_chunks_from_paths(paths, entity_chunk_map)
+    # 🔥 Multi-hop scored traversal
+    scored_paths = scored_traverse(
+        graph,
+        query_entities,
+        max_depth=2,
+        min_score=0.5
+    )
+
+    # 🔥 Resolve chunks WITH scores
+    chunk_scores = resolve_chunks_with_scores(
+        scored_paths,
+        entity_chunk_map
+    )
+
+    if not chunk_scores:
+        return {
+            "strategy": "fallback_vector",
+            "chunk_scores": {}
+        }
 
     return {
         "strategy": "graph_aware",
+        "mode": mode,
         "query_entities": query_entities,
-        "paths": paths,
-        "chunk_ids": chunk_ids,
+        "chunk_scores": chunk_scores
     }
+def scored_traverse(graph, start_entities, max_depth=2, min_score=0.5):
+    results = []
+
+    for source in start_entities:
+        for neighbor in graph.successors(source):
+            edge_data = graph.get_edge_data(source, neighbor)
+            weight = edge_data.get("weight", 0.5)
+
+            if weight >= min_score:
+                results.append(([source, neighbor], weight))
+
+    return results

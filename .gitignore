@@ -18,3 +18,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+data/eval_logs/
+data/index/
+general.txt

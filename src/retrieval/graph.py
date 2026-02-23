@@ -11,7 +11,8 @@ class GraphIndex:
         doc_map = defaultdict(list)
 
         for chunk in self.chunks:
-            doc_map[chunk["source"]].append(chunk)
+            doc_map[chunk["file_path"]].append(chunk)
+
 
         for doc_chunks in doc_map.values():
             doc_chunks.sort(key=lambda c: c["chunk_id"])
