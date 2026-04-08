@@ -107,7 +107,7 @@ def extract_chunk_id(result):
 
 # ---- Query ----
 query = "Does authentication comply with security policy?"
-
+#10111
 # ---- Graph-aware retrieval (NEW) ----
 graph_result = graph_aware_retrieval(query, chunks)
 
