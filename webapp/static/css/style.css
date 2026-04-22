@@ -1,0 +1,25 @@
+.text-block {
+    margin-bottom: 10px;
+    line-height: 1.6;
+    color: #e5e7eb;
+}
+
+.code-container {
+    background-color: #12170d;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 12px 0;
+    overflow-x: auto;
+}
+
+.code-container pre {
+    margin: 0;
+}
+
+.code-container code {
+    font-family: "Courier New", monospace;
+    font-size: 14px;
+    color: #c9d1d9;
+    white-space: pre;
+}

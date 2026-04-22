@@ -1,4 +1,0 @@
-Evaluation of retrieval systems includes metrics such as precision at K,
- grounding coverage, and recall.
- Measuring graph utility helps determine whether structural reasoning improves
-  retrieval quality.

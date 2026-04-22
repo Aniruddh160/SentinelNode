@@ -1,5 +1,0 @@
-Security Policy:
-
-1. All authentication must use hashed passwords.
-2. Multi-factor authentication (MFA) is required.
-3. Plaintext credentials are not allowed.

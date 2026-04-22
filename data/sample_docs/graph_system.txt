@@ -1,3 +1,0 @@
-Graph databases represent structured relationships between entities.
- Nodes represent concepts while edges represent relations.
-  Graph traversal enables multi-hop reasoning across connected components.

@@ -1,35 +1,54 @@
 import requests
+import os
 import src.indexer as indexer
 
 
 def ask_question(question):
 
     if indexer.vector_store is None:
-        return "No documents indexed."
+        return "❌ No documents indexed."
 
-    docs = indexer.vector_store.similarity_search(question, k=4)
+    # 🔍 Retrieve more context
+    docs = indexer.vector_store.similarity_search(question, k=5)
 
-    context = "\n".join([d.page_content for d in docs])
+    # 🧠 Build context
+    context = "\n\n".join([d.page_content for d in docs])
 
+    # 📂 Extract sources
+    sources = set()
+    for d in docs:
+        if "source" in d.metadata:
+            sources.add(d.metadata["source"])
+
+    # 🔥 Clean source names (optional but nicer)
+    clean_sources = [os.path.basename(s) for s in sources]
+
+    # 🧠 Improved prompt
     prompt = f"""
 You are a senior software engineer analyzing a codebase.
 
-Use the provided context to answer the question.
-
+STRICT RULES:
+- Answer ONLY using the provided context
+- Do NOT hallucinate
+- If unsure, say "Not enough information"
+- ALWAYS wrap code in triple backticks
+- Use format:
+```python
+code here
+- Never write "python" outside the code block
 CONTEXT:
 {context}
 
 QUESTION:
 {question}
 
-Instructions:
+INSTRUCTIONS:
 - Be precise and technical
-- Explain how the system works
-- Mention dependencies between components
-- If it's about changes, explain impact clearly
-- Avoid generic explanations
+- Explain flow of logic
+- Mention relationships between files/components
+- Keep answer structured
 
-Answer:
+ANSWER:
 """
 
     response = requests.post(
@@ -43,9 +62,14 @@ Answer:
 
     data = response.json()
 
-    print("OLLAMA RESPONSE:", data)  # debug
+    if "response" not in data:
+        return "❌ LLM returned an unexpected response."
 
-    if "response" in data:
-        return data["response"]
+    answer = data["response"]
 
-    return "LLM returned an unexpected response."
+    # 📂 Append sources
+    source_text = "\n\n📂 Sources:\n"
+    for src in clean_sources[:5]:
+        source_text += f"- {src}\n"
+
+    return answer.strip() + source_text

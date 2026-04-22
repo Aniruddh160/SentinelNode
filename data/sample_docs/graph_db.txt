@@ -1,3 +1,0 @@
-Graph databases improve retrieval systems by modeling relationships between entities. 
-Unlike flat vector search, graph traversal enables multi-hop reasoning and structural expansion.
-This allows systems to retrieve contextually related information beyond semantic similarity.
