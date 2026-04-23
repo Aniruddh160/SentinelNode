@@ -136,20 +136,19 @@ function renderGraph(graph) {
     const edges = new vis.DataSet(
         (graph.edges || []).map(e => ({
             from: e.source,
-            to: e.target
+            to: e.target,
+            title: "imports",   // 🔥 tooltip on hover
+            arrows: "to"
         }))
     );
 
     const data = { nodes, edges };
 
-    const options = {
+        const options = {
         nodes: {
             shape: "dot",
             size: 18,
-            font: {
-                size: 14,
-                color: "#ffffff"
-            },
+            font: { size: 13, color: "#ffffff" },
             color: {
                 background: "#3b82f6",
                 border: "#1d4ed8"
@@ -158,16 +157,24 @@ function renderGraph(graph) {
         edges: {
             color: "#9ca3af",
             width: 2,
-            smooth: true
+            smooth: true,
+            selectionWidth: 4,
+            hoverWidth: 4
         },
         physics: {
             enabled: true,
-            stabilization: false
+            stabilization: false,
+            barnesHut: {
+                gravitationalConstant: -3000,  // 🔥 spreads nodes apart
+                springLength: 250,             // 🔥 makes edges longer
+                springConstant: 0.04,
+                damping: 0.09
+            }
         },
         interaction: {
             hover: true,
-            zoomView: true,
-            dragView: true
+            tooltipDelay: 100,
+            navigationButtons: true
         }
     };
 
