@@ -1,5 +1,5 @@
-import ast
 import os
+import ast
 
 def extract_imports(file_path):
     imports = []
@@ -7,54 +7,63 @@ def extract_imports(file_path):
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             tree = ast.parse(f.read())
+    except:
+        return imports
 
-        for node in ast.walk(tree):
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for n in node.names:
+                imports.append(n.name.split(".")[0])
 
-            # import x
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    imports.append(alias.name.split('.')[-1])
-
-            # from x.y import z
-            elif isinstance(node, ast.ImportFrom):
-                if node.module:
-                    imports.append(node.module.split('.')[-1])
-
-    except Exception as e:
-        print(f"Error parsing {file_path}: {e}")
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
+                imports.append(node.module.split(".")[0])
 
     return imports
 
-def build_graph(directory):
+
+def build_graph(project_path):
     nodes = []
     edges = []
-
     file_map = {}
 
-    # Collect Python files
-    for root, _, files in os.walk(directory):
+    # 🔹 Step 1: Collect files
+    for root, _, files in os.walk(project_path):
         for file in files:
             if file.endswith(".py"):
-                full_path = os.path.join(root, file)
-                file_map[file.replace(".py", "")] = full_path
-                if {"id": file} not in nodes:
-                    nodes.append({"id": file})
+                module = file.replace(".py", "")
+                file_map[module] = file
 
-    # Build edges
-    for file_name, path in file_map.items():
-        imports = extract_imports(path)
+    # 🔹 Step 2: Create nodes
+    for module, file in file_map.items():
+        nodes.append({
+            "id": file,
+            "label": file   # 🔥 IMPORTANT
+        })
+
+    # 🔹 Step 3: Create edges
+    for module, file in file_map.items():
+        file_path = None
+
+        for root, _, files in os.walk(project_path):
+            if file in files:
+                file_path = os.path.join(root, file)
+                break
+
+        if not file_path:
+            continue
+
+        imports = extract_imports(file_path)
 
         for imp in imports:
-            target_file = imp + ".py"
-            node_ids = set(n["id"] for n in nodes)
+            if imp in file_map:
+                edges.append({
+                    "from": file,
+                    "to": file_map[imp],
+                    "label": "import"
+                })
 
-            for imp in imports:
-                target_file = imp + ".py"
-
-                if target_file in node_ids:
-                    edges.append({
-                        "source": file_name + ".py",
-                        "target": target_file
-                    })
-
-    return {"nodes": nodes, "edges": edges}
+    return {
+        "nodes": nodes,
+        "edges": edges
+    }

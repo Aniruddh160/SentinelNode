@@ -22,3 +22,5 @@ Thumbs.db
 data/eval_logs/
 data/index/
 general.txt
+
+webapp\templates\index_old
