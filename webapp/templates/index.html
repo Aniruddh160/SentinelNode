@@ -4,9 +4,7 @@
   <meta charset="UTF-8" />
   <title>SentinelNode</title>
 
-  <!-- Font -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
@@ -20,77 +18,80 @@
 
 <body class="bg-[#0B1220] text-gray-200 h-screen overflow-hidden">
 
+<!-- ================= HOME ================= -->
 <div id="home-screen" class="h-screen flex">
 
-  <!-- LEFT -->
   <div class="w-[250px] border-r border-gray-800 p-6">
     <h1 class="text-lg font-medium">SentinelNode</h1>
+
+    <button onclick="startNewChat()" 
+      class="mt-4 w-full text-left px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-sm">
+      + New Chat
+    </button>
   </div>
 
-  <!-- CENTER -->
   <div class="flex-1 flex flex-col items-center justify-center px-6">
-
     <div class="max-w-lg w-full text-center space-y-8">
 
-      <div class="space-y-3">
-        <h2 class="text-xl font-medium text-white">
-          What do you want to explore?
-        </h2>
-
+      <div>
+        <h2 class="text-xl text-white">What do you want to explore?</h2>
         <p class="text-sm text-gray-400">
-          Give SentinelNode a codebase. It will map the structure and let you ask questions about it.
+          Give SentinelNode a codebase. It maps the structure and lets you ask questions.
         </p>
       </div>
 
       <div class="flex justify-center gap-4">
-
-        <button onclick="showLocalInput()"
-          class="bg-blue-600 px-4 py-2 rounded-md hover:bg-blue-500">
-          Use local folder
-        </button>
-
-        <button onclick="showRepoInput()"
-          class="border border-gray-600 px-4 py-2 rounded-md hover:border-gray-400">
-          Clone GitHub repo
-        </button>
-
+        <button onclick="showLocalInput()" class="bg-blue-600 px-4 py-2 rounded-md">Use local folder</button>
+        <button onclick="showRepoInput()" class="border border-gray-600 px-4 py-2 rounded-md">Clone GitHub repo</button>
       </div>
 
       <div id="local-input" class="hidden flex gap-2 justify-center">
         <input id="local-path" placeholder="Enter folder path"
-          class="p-3 rounded-md bg-[#111827] border border-gray-700 w-[300px] outline-none" />
-        <button onclick="indexLocal()" class="bg-blue-600 px-3 rounded-md hover:bg-blue-500">
-          Index
-        </button>
+          class="p-3 rounded-md bg-[#111827] border border-gray-700 w-[300px]" />
+        <button onclick="indexLocal()" class="bg-blue-600 px-3 rounded-md">Index</button>
       </div>
 
       <div id="repo-input" class="hidden flex gap-2 justify-center">
         <input id="repo-url" placeholder="Enter GitHub URL"
-          class="p-3 rounded-md bg-[#111827] border border-gray-700 w-[300px] outline-none" />
-        <button onclick="indexRepo()" class="bg-blue-600 px-3 rounded-md hover:bg-blue-500">
-          Clone and index
-        </button>
+          class="p-3 rounded-md bg-[#111827] border border-gray-700 w-[300px]" />
+        <button onclick="indexRepo()" class="bg-blue-600 px-3 rounded-md">Clone and index</button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="w-[30%] border-l border-gray-800 flex items-center justify-center text-sm text-gray-400 p-6">
+    Load a project and explore how files connect. Ask questions after indexing.
+  </div>
+
+</div>
+
+
+<!-- ================= CHAT ================= -->
+<div id="chat-screen" class="hidden flex h-screen">
+
+  <!-- Sidebar -->
+  <div class="w-[250px] border-r border-gray-800 p-6 flex flex-col h-screen">
+
+    <h1 class="text-lg font-medium">SentinelNode</h1>
+
+    <div class="mt-4 flex flex-col flex-1">
+
+      <button onclick="startNewChat()" 
+        class="w-full text-left px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-sm">
+        + New Chat
+      </button>
+
+      <div class="mt-6 flex-1 overflow-y-auto">
+        <p class="text-xs text-gray-500 mb-2">Chat History</p>
+        <div id="chat-history" class="space-y-2 text-sm"></div>
       </div>
 
     </div>
 
   </div>
 
-  <!-- RIGHT -->
-  <div class="w-[30%] border-l border-gray-800 flex items-center justify-center text-sm text-gray-400 p-6">
-    Load a project and explore how the files are connected. You can ask questions once it’s indexed.
-  </div>
-
-</div>
-
-
-<!-- CHAT SCREEN -->
-<div id="chat-screen" class="hidden flex h-screen">
-
-  <div class="w-[250px] border-r border-gray-800 p-6">
-    <h1 class="text-lg font-medium">SentinelNode</h1>
-  </div>
-
+  <!-- Chat -->
   <div class="flex-1 flex flex-col">
 
     <div id="context-info" class="p-4 border-b border-gray-800 text-sm text-gray-400">
@@ -101,33 +102,34 @@
       <div id="chat-inner" class="max-w-3xl mx-auto space-y-6"></div>
     </div>
 
-    <div class="p-4 border-t border-gray-800">
-      <div class="max-w-3xl mx-auto">
-        <input id="user-input" placeholder="Ask about your codebase"
-          class="w-full p-4 rounded-md bg-[#111827] border border-gray-700 outline-none" />
-      </div>
+    <div class="p-4 border-t border-gray-800 flex gap-2">
+      <input id="user-input" placeholder="Ask about your codebase"
+        class="flex-1 p-4 rounded-md bg-[#111827] border border-gray-700 outline-none" />
+
+      <button onclick="sendMessage()"
+        class="px-4 rounded-md bg-blue-600 hover:bg-blue-500">
+        Send
+      </button>
     </div>
 
   </div>
 
+  <!-- Graph -->
   <div class="w-[35%] border-l border-gray-800">
-    <div class="p-3 text-sm text-gray-400 border-b border-gray-800">
-      Knowledge Graph
-    </div>
+    <div class="p-3 text-sm text-gray-400 border-b border-gray-800">Knowledge Graph</div>
     <div id="network" class="h-full"></div>
   </div>
 
 </div>
 
-
 <script>
-// SCREEN SWITCH
+// ================= SCREEN SWITCH =================
 function goToChat() {
   document.getElementById("home-screen").classList.add("hidden");
   document.getElementById("chat-screen").classList.remove("hidden");
 }
 
-// INPUT TOGGLES
+// ================= INPUT =================
 function showLocalInput() {
   document.getElementById("local-input").classList.remove("hidden");
   document.getElementById("repo-input").classList.add("hidden");
@@ -138,7 +140,7 @@ function showRepoInput() {
   document.getElementById("local-input").classList.add("hidden");
 }
 
-// INDEX LOCAL
+// ================= INDEX =================
 async function indexLocal() {
   const path = document.getElementById("local-path").value;
 
@@ -149,12 +151,10 @@ async function indexLocal() {
   });
 
   document.getElementById("context-info").innerText = path;
-
   goToChat();
   setTimeout(loadGraph, 1000);
 }
 
-// INDEX REPO
 async function indexRepo() {
   const url = document.getElementById("repo-url").value;
 
@@ -165,22 +165,19 @@ async function indexRepo() {
   });
 
   document.getElementById("context-info").innerText = url;
-
   goToChat();
   setTimeout(loadGraph, 1000);
 }
 
-// CHAT
-const input = document.getElementById("user-input");
-const chatInner = document.getElementById("chat-inner");
-
+// ================= MESSAGE RENDER =================
 function addMessage(text, sender="user") {
+  const chatInner = document.getElementById("chat-inner");
+
   const div = document.createElement("div");
   div.className = sender === "user" ? "flex justify-end" : "flex justify-start";
 
   div.innerHTML = `
-    <div class="${sender === "user" ? "bg-blue-600" : "bg-gray-700"} 
-      px-4 py-2 rounded-md max-w-[70%] whitespace-pre-wrap">
+    <div class="${sender === "user" ? "bg-blue-600" : "bg-gray-700"} px-4 py-2 rounded-md max-w-[70%] whitespace-pre-wrap">
       ${text}
     </div>
   `;
@@ -188,14 +185,31 @@ function addMessage(text, sender="user") {
   chatInner.appendChild(div);
 }
 
-input.addEventListener("keydown", async (e) => {
-  if (e.key === "Enter") {
-    const question = input.value.trim();
-    if (!question) return;
+// ================= NEW CHAT STATE =================
+let chatSessions = JSON.parse(localStorage.getItem("chatSessions") || "[]");
+let currentChat = JSON.parse(localStorage.getItem("currentChat") || "[]");
 
-    addMessage(question, "user");
-    input.value = "";
+// ================= AUTO-SAVE WRAPPER =================
+const originalAddMessage = addMessage;
+addMessage = function(text, sender="user") {
+  currentChat.push({ text, sender });
 
+  // auto-save current chat
+  localStorage.setItem("currentChat", JSON.stringify(currentChat));
+
+  originalAddMessage(text, sender);
+};
+
+// ================= SEND MESSAGE =================
+async function sendMessage() {
+  const input = document.getElementById("user-input");
+  const question = input.value.trim();
+  if (!question) return;
+
+  addMessage(question, "user");
+  input.value = "";
+
+  try {
     const res = await fetch("/query", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
@@ -203,70 +217,121 @@ input.addEventListener("keydown", async (e) => {
     });
 
     const data = await res.json();
-
     addMessage(data.answer || "No response", "ai");
-  }
-});
 
-// GRAPH
+  } catch (err) {
+    addMessage("Error: backend not responding", "ai");
+  }
+}
+
+// ================= GRAPH =================
 async function loadGraph() {
   const res = await fetch("/get-graph");
   const data = await res.json();
 
-  console.log("GRAPH DATA:", data);
+  if (!data.nodes || data.nodes.length === 0) return;
 
-  if (!data.nodes || data.nodes.length === 0) {
-    console.warn("Graph empty");
-    return;
+  new vis.Network(
+    document.getElementById("network"),
+    { nodes: data.nodes, edges: data.edges },
+    {
+      edges: { arrows: "to", smooth: true },
+      physics: { solver: "forceAtlas2Based", forceAtlas2Based: { springLength: 220 } }
+    }
+  );
+}
+
+// ================= SAVE CHAT =================
+function saveChat() {
+  if (!currentChat.length) return;
+
+  let sessions = JSON.parse(localStorage.getItem("chatSessions") || "[]");
+
+  sessions.push({
+    id: Date.now(),
+    messages: [...currentChat]
+  });
+
+  localStorage.setItem("chatSessions", JSON.stringify(sessions));
+  localStorage.removeItem("currentChat");
+
+  renderChatHistory();
+}
+
+// ================= NEW CHAT =================
+function startNewChat() {
+  try {
+    saveChat();
+
+    currentChat = [];
+
+    document.getElementById("chat-inner").innerHTML = "";
+
+    document.getElementById("chat-screen").classList.add("hidden");
+    document.getElementById("home-screen").classList.remove("hidden");
+
+  } catch (err) {
+    console.error("New Chat Error:", err);
+  }
+}
+
+// ================= HISTORY =================
+function renderChatHistory() {
+  const container = document.getElementById("chat-history");
+  if (!container) return;
+
+  // ALWAYS read fresh data
+  const sessions = JSON.parse(localStorage.getItem("chatSessions") || "[]");
+
+  container.innerHTML = "";
+
+  sessions.slice().reverse().forEach(chat => {
+    const div = document.createElement("div");
+
+    div.className = "p-2 bg-gray-800 rounded cursor-pointer hover:bg-gray-700";
+    div.innerText = new Date(chat.id).toLocaleString();
+
+    div.onclick = () => loadChat(chat);
+
+    container.appendChild(div);
+  });
+}
+
+function loadChat(chat) {
+  currentChat = [...chat.messages]; // clone
+
+  localStorage.setItem("currentChat", JSON.stringify(currentChat));
+
+  document.getElementById("chat-inner").innerHTML = "";
+
+  currentChat.forEach(msg => {
+    originalAddMessage(msg.text, msg.sender);
+  });
+
+  goToChat();
+}
+
+// ================= INIT =================
+document.addEventListener("DOMContentLoaded", () => {
+
+  renderChatHistory();
+
+  // restore active chat if exists
+  if (currentChat.length > 0) {
+    currentChat.forEach(msg => {
+      originalAddMessage(msg.text, msg.sender);
+    });
+    goToChat();
   }
 
-  const container = document.getElementById("network");
+  const input = document.getElementById("user-input");
 
-  const graphData = {
-    nodes: new vis.DataSet(data.nodes),
-    edges: new vis.DataSet(data.edges)
-  };
-
-  const options = {
-    nodes: {
-      shape: "dot",
-      size: 16,
-      font: {
-        size: 14,
-        color: "#ffffff"
-      }
-    },
-
-    edges: {
-      arrows: {
-        to: { enabled: true }
-      },
-      smooth: true,
-      font: {
-        size: 10,
-        align: "middle"
-      }
-    },
-
-    physics: {
-      solver: "forceAtlas2Based",
-      forceAtlas2Based: {
-        gravitationalConstant: -120,
-        centralGravity: 0.01,
-        springLength: 180,
-        springConstant: 0.05,
-        damping: 0.4,
-        avoidOverlap: 1
-      }
-    },
-
-    interaction: {
-      hover: true
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      sendMessage();
     }
-  };
-
-  new vis.Network(container, graphData, options);
-}
+  });
+});
 </script>
 
 </body>
