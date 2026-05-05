@@ -1,31 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>SentinelNode</title>
+<meta charset="UTF-8" />
+<title>SentinelNode</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      line-height: 1.55;
-    }
-  </style>
+<style>
+body {
+  font-family: 'Inter', sans-serif;
+  line-height: 1.55;
+}
+
+.chat-history {
+  height: calc(100vh - 140px);
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.chat-history::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-history::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 10px;
+}
+
+button {
+  transition: all 0.2s ease;
+}
+</style>
 </head>
 
-<body class="bg-[#0B1220] text-gray-200 h-screen overflow-hidden">
+<body class="bg-black text-gray-300 h-screen overflow-hidden">
+
+<!-- ================= HEADER ================= -->
+
+<div class="h-[60px] border-b border-gray-800 flex items-center px-4 bg-black">
+
+  <!-- Sidebar Toggle -->
+  <button onclick="toggleSidebar()" 
+    class="mr-3 px-3 py-2 bg-[#111] border border-[#222] rounded-md hover:bg-[#1a1a1a] text-gray-300">
+    ☰
+  </button>
+
+  <!-- Logo -->
+  <button onclick="goHome()" class="text-white font-medium text-lg">
+    SentinelNode
+  </button>
+
+</div>
+
 
 <!-- ================= HOME ================= -->
-<div id="home-screen" class="h-screen flex">
+<div id="home-screen" class="h-[calc(100vh-60px)] flex">
 
   <div class="w-[250px] border-r border-gray-800 p-6">
-    <h1 class="text-lg font-medium">SentinelNode</h1>
+    <h1 class="text-lg font-medium text-white">SentinelNode</h1>
 
     <button onclick="startNewChat()" 
-      class="mt-4 w-full text-left px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-sm">
+      class="mt-4 w-full text-left px-3 py-2 rounded-md bg-white text-black hover:bg-gray-200 text-sm">
       + New Chat
     </button>
   </div>
@@ -41,89 +78,130 @@
       </div>
 
       <div class="flex justify-center gap-4">
-        <button onclick="showLocalInput()" class="bg-blue-600 px-4 py-2 rounded-md">Use local folder</button>
-        <button onclick="showRepoInput()" class="border border-gray-600 px-4 py-2 rounded-md">Clone GitHub repo</button>
+        <button onclick="showLocalInput()" class="bg-white text-black px-4 py-2 rounded-md hover:bg-gray-200">
+          Use local folder
+        </button>
+
+        <button onclick="showRepoInput()" class="border border-gray-600 px-4 py-2 rounded-md hover:bg-gray-800">
+          Clone GitHub repo
+        </button>
       </div>
 
       <div id="local-input" class="hidden flex gap-2 justify-center">
         <input id="local-path" placeholder="Enter folder path"
-          class="p-3 rounded-md bg-[#111827] border border-gray-700 w-[300px]" />
-        <button onclick="indexLocal()" class="bg-blue-600 px-3 rounded-md">Index</button>
+          class="p-3 rounded-md bg-[#0f0f0f] border border-gray-700 w-[300px]" />
+        <button onclick="indexLocal()" class="bg-white text-black px-3 rounded-md hover:bg-gray-200">
+          Index
+        </button>
       </div>
 
       <div id="repo-input" class="hidden flex gap-2 justify-center">
         <input id="repo-url" placeholder="Enter GitHub URL"
-          class="p-3 rounded-md bg-[#111827] border border-gray-700 w-[300px]" />
-        <button onclick="indexRepo()" class="bg-blue-600 px-3 rounded-md">Clone and index</button>
+          class="p-3 rounded-md bg-[#0f0f0f] border border-gray-700 w-[300px]" />
+        <button onclick="indexRepo()" class="bg-white text-black px-3 rounded-md hover:bg-gray-200">
+          Clone & Index
+        </button>
       </div>
 
     </div>
   </div>
 
   <div class="w-[30%] border-l border-gray-800 flex items-center justify-center text-sm text-gray-400 p-6">
-    Load a project and explore how files connect. Ask questions after indexing.
+    Load a project and explore how files connect.
   </div>
 
 </div>
 
-
 <!-- ================= CHAT ================= -->
-<div id="chat-screen" class="hidden flex h-screen">
+<div id="chat-screen" class="hidden flex h-[calc(100vh-60px)]">
 
   <!-- Sidebar -->
-  <div class="w-[250px] border-r border-gray-800 p-6 flex flex-col h-screen">
+  <div id="sidebar" class="w-[250px] border-r border-gray-800 p-6 flex flex-col h-screen transition-all duration-300">
 
-    <h1 class="text-lg font-medium">SentinelNode</h1>
+    <h1 class="text-lg font-medium text-white">SentinelNode</h1>
 
-    <div class="mt-4 flex flex-col flex-1">
+    <button onclick="startNewChat()" 
+      class="mt-4 w-full text-left px-3 py-2 rounded-md bg-white text-black hover:bg-gray-200 text-sm">
+      + New Chat
+    </button>
 
-      <button onclick="startNewChat()" 
-        class="w-full text-left px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-sm">
-        + New Chat
-      </button>
+    <div class="mt-6 flex-1 flex flex-col">
+      <p class="text-xs text-gray-500 mb-2">Chat History</p>
 
-      <div class="mt-6 flex-1 overflow-y-auto">
-        <p class="text-xs text-gray-500 mb-2">Chat History</p>
-        <div id="chat-history" class="space-y-2 text-sm"></div>
-      </div>
-
+      <div id="chat-history" class="chat-history space-y-2 text-sm"></div>
     </div>
 
   </div>
 
   <!-- Chat -->
   <div class="flex-1 flex flex-col">
+<div class="relative">
 
+</div>
     <div id="context-info" class="p-4 border-b border-gray-800 text-sm text-gray-400">
       Loading...
     </div>
 
     <div id="chat-messages" class="flex-1 overflow-y-auto p-6">
-      <div id="chat-inner" class="max-w-3xl mx-auto space-y-6"></div>
+      <div id="chat-inner" class="max-w-3xl mx-auto space-y-4"></div>
     </div>
 
     <div class="p-4 border-t border-gray-800 flex gap-2">
       <input id="user-input" placeholder="Ask about your codebase"
-        class="flex-1 p-4 rounded-md bg-[#111827] border border-gray-700 outline-none" />
+        class="flex-1 p-4 rounded-md bg-[#0f0f0f] border border-gray-700 outline-none" />
 
       <button onclick="sendMessage()"
-        class="px-4 rounded-md bg-blue-600 hover:bg-blue-500">
+        class="px-4 rounded-md bg-white text-black hover:bg-gray-200">
         Send
       </button>
     </div>
 
   </div>
+  <!-- DRAG HANDLE -->
+    <div id="resizer" class="w-[5px] cursor-col-resize bg-gray-800 hover:bg-gray-600"></div>
+
 
   <!-- Graph -->
-  <div class="w-[35%] border-l border-gray-800">
-    <div class="p-3 text-sm text-gray-400 border-b border-gray-800">Knowledge Graph</div>
-    <div id="network" class="h-full"></div>
-  </div>
-
+  <div id="graph-container" class="w-[35%] min-w-[250px] border-l border-gray-800 flex flex-col h-screen overflow-hidden">
+      <div class="p-3 text-xs tracking-wide text-gray-500 border-b border-gray-800">
+        Knowledge Graph
+      </div>
+      <div id="resizer" 
+     class="w-[4px] bg-gray-800 hover:bg-white/30 transition-all cursor-col-resize">
 </div>
+      <div id="network" class="flex-1 overflow-hidden"></div>
+    </div>
 
+  </div>
 <script>
-// ================= SCREEN SWITCH =================
+
+
+
+function goHome() {
+  document.getElementById("chat-screen").classList.add("hidden");
+  document.getElementById("home-screen").classList.remove("hidden");
+  window.scrollTo(0, 0);
+}
+
+// ================= SIDEBAR TOGGLE =================
+let sidebarVisible = true;
+
+function toggleSidebar() {
+  const sidebar = document.getElementById("sidebar");
+
+  if (sidebarVisible) {
+    sidebar.style.width = "0px";
+    sidebar.style.padding = "0px";
+    sidebar.style.overflow = "hidden";
+  } else {
+    sidebar.style.width = "250px";
+    sidebar.style.padding = "24px";
+  }
+
+  sidebarVisible = !sidebarVisible;
+}
+
+// ================= NAV =================
 function goToChat() {
   document.getElementById("home-screen").classList.add("hidden");
   document.getElementById("chat-screen").classList.remove("hidden");
@@ -169,79 +247,110 @@ async function indexRepo() {
   setTimeout(loadGraph, 1000);
 }
 
-// ================= MESSAGE RENDER =================
+// ================= CHAT =================
+
+function formatResponse(text) {
+  if (!text) return "";
+
+  // 🔥 Convert bullets
+  text = text.replace(/- /g, "<br>• ");
+
+  // 🔥 Add spacing after sentences
+  text = text.replace(/\. /g, ".<br><br>");
+
+  // 🔥 Fix line breaks
+  text = text.replace(/\n/g, "<br>");
+
+  return text;
+}
+
+
 function addMessage(text, sender="user") {
   const chatInner = document.getElementById("chat-inner");
 
   const div = document.createElement("div");
-  div.className = sender === "user" ? "flex justify-end" : "flex justify-start";
+    if (sender === "user") {
+    div.className = "flex justify-end";
 
-  div.innerHTML = `
-    <div class="${sender === "user" ? "bg-blue-600" : "bg-gray-700"} px-4 py-2 rounded-md max-w-[70%] whitespace-pre-wrap">
-      ${text}
-    </div>
-  `;
+    div.innerHTML = `
+      <div class="bg-white text-black px-3 py-1.5 rounded-xl max-w-[50%] text-sm border border-gray-300">
+        ${text}
+      </div>
+    `;
+  } else {
+    div.className = "w-full";
+
+div.innerHTML = `
+  <div class="max-w-3xl w-full px-5 py-4 
+              bg-[#111111] 
+              text-gray-300 text-[14px] leading-relaxed 
+              whitespace-pre-wrap
+              rounded-xl
+              border border-[#1f1f1f]
+              transition-all duration-200 hover:border-[#2a2a2a]">
+
+    ${formatResponse(text)}
+
+  </div>
+`;
+  }
 
   chatInner.appendChild(div);
 }
 
-// ================= NEW CHAT STATE =================
+// ================= STATE =================
 let chatSessions = JSON.parse(localStorage.getItem("chatSessions") || "[]");
 let currentChat = JSON.parse(localStorage.getItem("currentChat") || "[]");
 
-// ================= AUTO-SAVE WRAPPER =================
-const originalAddMessage = addMessage;
-addMessage = function(text, sender="user") {
-  currentChat.push({ text, sender });
-
-  // auto-save current chat
-  localStorage.setItem("currentChat", JSON.stringify(currentChat));
-
-  originalAddMessage(text, sender);
-};
-
-// ================= SEND MESSAGE =================
+// ================= SEND =================
 async function sendMessage() {
   const input = document.getElementById("user-input");
   const question = input.value.trim();
   if (!question) return;
 
   addMessage(question, "user");
-  input.value = "";
+  currentChat.push({ text: question, sender: "user" });
 
-  try {
-    const res = await fetch("/query", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ question })
+
+  if (currentChat.length === 1) {
+    let sessions = JSON.parse(localStorage.getItem("chatSessions") || "[]");
+
+    sessions.push({
+      id: Date.now(),
+      title: question,
+      messages: [...currentChat]
     });
 
-    const data = await res.json();
-    addMessage(data.answer || "No response", "ai");
+    localStorage.setItem("chatSessions", JSON.stringify(sessions));
+    chatSessions = sessions;
 
-  } catch (err) {
-    addMessage("Error: backend not responding", "ai");
+    renderChatHistory();
   }
-}
 
-// ================= GRAPH =================
-async function loadGraph() {
-  const res = await fetch("/get-graph");
+  input.value = "";
+
+  const res = await fetch("/query", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ question })
+  });
+
   const data = await res.json();
+  addMessage(data.answer, "ai");
 
-  if (!data.nodes || data.nodes.length === 0) return;
+  currentChat.push({ text: data.answer, sender: "ai" });
 
-  new vis.Network(
-    document.getElementById("network"),
-    { nodes: data.nodes, edges: data.edges },
-    {
-      edges: { arrows: "to", smooth: true },
-      physics: { solver: "forceAtlas2Based", forceAtlas2Based: { springLength: 220 } }
-    }
-  );
+  //  UPDATE LAST SESSION
+  let sessions = JSON.parse(localStorage.getItem("chatSessions") || "[]");
+
+  if (sessions.length > 0) {
+    sessions[sessions.length - 1].messages = [...currentChat];
+    localStorage.setItem("chatSessions", JSON.stringify(sessions));
+  }
+  localStorage.setItem("currentChat", JSON.stringify(currentChat));
 }
 
-// ================= SAVE CHAT =================
+// ================= SAVE =================
 function saveChat() {
   if (!currentChat.length) return;
 
@@ -249,10 +358,15 @@ function saveChat() {
 
   sessions.push({
     id: Date.now(),
+    title: currentChat[0]?.text || "New Chat",
     messages: [...currentChat]
   });
 
   localStorage.setItem("chatSessions", JSON.stringify(sessions));
+
+  // refresh global variable
+  chatSessions = sessions;
+
   localStorage.removeItem("currentChat");
 
   renderChatHistory();
@@ -260,36 +374,49 @@ function saveChat() {
 
 // ================= NEW CHAT =================
 function startNewChat() {
-  try {
-    saveChat();
+  saveChat();
 
-    currentChat = [];
+  currentChat = [];
+  localStorage.removeItem("currentChat");
 
-    document.getElementById("chat-inner").innerHTML = "";
+  document.getElementById("chat-inner").innerHTML = "";
 
-    document.getElementById("chat-screen").classList.add("hidden");
-    document.getElementById("home-screen").classList.remove("hidden");
-
-  } catch (err) {
-    console.error("New Chat Error:", err);
-  }
+  // go back to home screen (correct behavior)
+  document.getElementById("chat-screen").classList.add("hidden");
+  document.getElementById("home-screen").classList.remove("hidden");
 }
-
 // ================= HISTORY =================
 function renderChatHistory() {
   const container = document.getElementById("chat-history");
-  if (!container) return;
-
-  // ALWAYS read fresh data
-  const sessions = JSON.parse(localStorage.getItem("chatSessions") || "[]");
-
   container.innerHTML = "";
 
-  sessions.slice().reverse().forEach(chat => {
+  chatSessions = JSON.parse(localStorage.getItem("chatSessions") || "[]");
+
+  chatSessions.slice().reverse().forEach(chat => {
     const div = document.createElement("div");
 
-    div.className = "p-2 bg-gray-800 rounded cursor-pointer hover:bg-gray-700";
-    div.innerText = new Date(chat.id).toLocaleString();
+    // 🔥 fallback for old chats
+    let title = chat.title || chat.messages?.[0]?.text || "New Chat";
+
+    if (title.length > 35) {
+      title = title.substring(0, 35) + "...";
+    }
+
+    div.className = `
+        p-2 
+        bg-[#111111] 
+        border border-[#1f1f1f]
+        rounded-md 
+        cursor-pointer 
+        hover:bg-[#1a1a1a]
+        transition-all duration-150
+        text-gray-300
+      `;
+
+    if (JSON.stringify(chat.messages) === JSON.stringify(currentChat)) {
+        div.classList.add("bg-[#1a1a1a]", "border-gray-500");
+      }
+    div.innerText = title;
 
     div.onclick = () => loadChat(chat);
 
@@ -298,38 +425,70 @@ function renderChatHistory() {
 }
 
 function loadChat(chat) {
-  currentChat = [...chat.messages]; // clone
-
+  currentChat = chat.messages;
   localStorage.setItem("currentChat", JSON.stringify(currentChat));
 
   document.getElementById("chat-inner").innerHTML = "";
 
   currentChat.forEach(msg => {
-    originalAddMessage(msg.text, msg.sender);
+    addMessage(msg.text, msg.sender);
   });
 
   goToChat();
 }
 
+// ================= RESIZER =================
+const resizer = document.getElementById("resizer");
+const graph = document.getElementById("graph-container");
+
+let isResizing = false;
+
+resizer.addEventListener("mousedown", () => {
+  isResizing = true;
+  document.body.style.cursor = "col-resize";
+});
+
+document.addEventListener("mousemove", (e) => {
+  if (!isResizing) return;
+
+  const newWidth = window.innerWidth - e.clientX;
+
+  if (newWidth > 250 && newWidth < window.innerWidth * 0.7) {
+    graph.style.width = newWidth + "px";
+  }
+});
+
+document.addEventListener("mouseup", () => {
+  isResizing = false;
+  document.body.style.cursor = "default";
+});
+
+
+// ================= GRAPH =================
+let network;
+
+async function loadGraph() {
+  const res = await fetch("/get-graph");
+  const data = await res.json();
+
+  network = new vis.Network(
+    document.getElementById("network"),
+    data,
+    { edges: { arrows: "to" } }
+  );
+}
+
 // ================= INIT =================
 document.addEventListener("DOMContentLoaded", () => {
-
   renderChatHistory();
 
-  // restore active chat if exists
   if (currentChat.length > 0) {
-    currentChat.forEach(msg => {
-      originalAddMessage(msg.text, msg.sender);
-    });
+    currentChat.forEach(msg => addMessage(msg.text, msg.sender));
     goToChat();
   }
 
-  const input = document.getElementById("user-input");
-
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      sendMessage();
-    }
+  document.getElementById("user-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") sendMessage();
   });
 });
 </script>

@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-
+from src.graph_builder import add_api_routes_to_graph
 from src.symbol_analyzer import analyze_project
 from src.github_loader import clone_repo
 from src.indexer import index_directory as run_indexer
@@ -96,6 +96,9 @@ async def clone_repo_api(data: dict):
         graph_data["edges"] = graph.get("edges", [])
 
         symbol_data = analyze_project(local_path)
+
+
+        graph = add_api_routes_to_graph(graph, symbol_data)
 
         with open("symbols.json", "w") as f:
             json.dump(symbol_data, f, indent=2)

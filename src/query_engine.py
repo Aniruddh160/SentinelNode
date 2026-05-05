@@ -4,6 +4,13 @@ import re
 import json
 import src.indexer as indexer
 
+import re
+
+def is_general_question(q):
+    # no file mentioned + short casual text
+    return not re.search(r'\.py', q) and len(q.split()) < 6
+
+
 
 # ================= LOAD GRAPH =================
 def load_graph():
@@ -142,7 +149,8 @@ def handle_relationship_question(question):
 def ask_question(question):
 
     question_lower = question.lower()
-
+    if is_general_question(question):
+        return "Hey 👋 Ask me something about your codebase!"
     # ================= CASUAL CHAT =================
     casual_keywords = [
         "hi", "hello", "hey", "how are you", "what's up",
