@@ -152,6 +152,14 @@ def ask_question(question):
     if any(k in question_lower for k in casual_keywords):
         return general_chat(question)
 
+    # ================= SYMBOL USAGE =================
+    usage_keywords = ["where is", "used", "usage", "where exactly"]
+
+    if any(k in question_lower for k in usage_keywords):
+        result = handle_symbol_usage(question)
+        if result:
+            return result
+
     # ================= FILE RELATIONSHIP =================
     files = re.findall(r'([\w\-]+\.py)', question_lower)
 
@@ -170,6 +178,31 @@ def ask_question(question):
         return general_chat(
             "Explain what a knowledge graph represents in a codebase in simple terms."
         )
+
+
+    class_keywords = ["classes", "class list", "what are the classes"]
+
+    if any(k in question_lower for k in class_keywords):
+        result = handle_class_listing(question)
+        if result:
+            return result
+        
+
+    function_keywords = ["functions", "function list", "all functions"]
+
+    if any(k in question_lower for k in function_keywords):
+        result = handle_function_listing(question)
+        if result:
+            return result
+        
+
+    api_keywords = ["api routes", "endpoints", "routes", "api"]
+
+    if any(k in question_lower for k in api_keywords):
+        result = handle_api_routes(question)
+        if result:
+            return result
+    
 
     # ================= CHECK INDEX =================
     if indexer.vector_store is None:
@@ -279,3 +312,138 @@ ANSWER:
         source_text += f"- {src}\n"
 
     return answer + source_text
+
+
+def load_symbols():
+    try:
+        with open("symbols.json", "r") as f:
+            return json.load(f)
+    except:
+        return {}
+    
+
+def handle_symbol_usage(question):
+    import re
+
+    symbols = load_symbols()
+    question_lower = question.lower()
+
+    # extract file
+    file_match = re.search(r'([\w\-]+\.py)', question_lower)
+    if not file_match:
+        return None
+
+    file_name = file_match.group(1)
+
+    # extract class name (simple heuristic: capitalized word)
+    class_match = re.search(r'\b([A-Z][A-Za-z0-9_]*)\b', question)
+    if not class_match:
+        return None
+
+    class_name = class_match.group(1)
+
+    file_data = symbols.get(file_name)
+
+    if not file_data:
+        return f"No analysis found for {file_name}."
+
+    usages = file_data.get("usages", {}).get(class_name)
+
+    if not usages:
+        return f"{class_name} is not used inside {file_name}."
+
+    response = f"{class_name} is used in {file_name} at:\n\n"
+
+    for u in usages:
+        response += f"- Function `{u['function']}` (line {u['line']})\n"
+
+    return response
+
+
+def handle_class_listing(question):
+    import re
+
+    symbols = load_symbols()
+    question_lower = question.lower()
+
+    file_match = re.search(r'([\w\-]+\.py)', question_lower)
+    if not file_match:
+        return None
+
+    file_name = file_match.group(1)
+
+    file_data = symbols.get(file_name)
+
+    if not file_data:
+        return f"No analysis found for {file_name}."
+
+    classes = file_data.get("classes", [])
+
+    if not classes:
+        return f"No classes found in {file_name}."
+
+    response = f"Classes in {file_name}:\n\n"
+
+    for c in classes:
+        response += f"- {c['name']} (line {c['line']})\n"
+
+    return response
+
+
+def handle_function_listing(question):
+    import re
+
+    symbols = load_symbols()
+    question_lower = question.lower()
+
+    file_match = re.search(r'([\w\-]+\.py)', question_lower)
+    if not file_match:
+        return None
+
+    file_name = file_match.group(1)
+
+    file_data = symbols.get(file_name)
+
+    if not file_data:
+        return f"No analysis found for {file_name}."
+
+    functions = file_data.get("functions", [])
+
+    if not functions:
+        return f"No functions found in {file_name}."
+
+    response = f"Functions in {file_name}:\n\n"
+
+    for f in functions:
+        response += f"- {f['name']} (line {f['line']})\n"
+
+    return response
+
+def handle_api_routes(question):
+    import re
+
+    symbols = load_symbols()
+    question_lower = question.lower()
+
+    file_match = re.search(r'([\w\-]+\.py)', question_lower)
+    if not file_match:
+        return None
+
+    file_name = file_match.group(1)
+
+    file_data = symbols.get(file_name)
+
+    if not file_data:
+        return f"No analysis found for {file_name}."
+
+    routes = file_data.get("routes", [])
+
+    if not routes:
+        return f"No API routes found in {file_name}."
+
+    response = f"API routes in {file_name}:\n\n"
+
+    for r in routes:
+        response += f"- [{r['method']}] {r['path']} → `{r['function']}` (line {r['line']})\n"
+
+    return response

@@ -1,9 +1,11 @@
+
+
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-
+from src.symbol_analyzer import analyze_project
 from src.github_loader import clone_repo
 from src.indexer import index_directory as run_indexer
 from src.query_engine import ask_question
@@ -61,6 +63,11 @@ async def index_directory_api(data: dict):
     graph_data["nodes"] = graph.get("nodes", [])
     graph_data["edges"] = graph.get("edges", [])
 
+    symbol_data = analyze_project(path)
+
+    with open("symbols.json", "w") as f:
+        json.dump(symbol_data, f, indent=2)
+
     return {
         "status": "indexed",
         "chunks": chunks
@@ -87,6 +94,12 @@ async def clone_repo_api(data: dict):
 
         graph_data["nodes"] = graph.get("nodes", [])
         graph_data["edges"] = graph.get("edges", [])
+
+        symbol_data = analyze_project(local_path)
+
+        with open("symbols.json", "w") as f:
+            json.dump(symbol_data, f, indent=2)
+
 
         return {
             "status": "success",
