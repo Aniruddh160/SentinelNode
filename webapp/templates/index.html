@@ -58,14 +58,23 @@ button {
 <!-- ================= HOME ================= -->
 <div id="home-screen" class="h-[calc(100vh-60px)] flex">
 
-  <div class="w-[250px] border-r border-gray-800 p-6">
-    <h1 class="text-lg font-medium text-white">SentinelNode</h1>
+<div class="w-[250px] border-r border-gray-800 p-6 flex flex-col h-full">
 
-    <button onclick="startNewChat()" 
-      class="mt-4 w-full text-left px-3 py-2 rounded-md bg-white text-black hover:bg-gray-200 text-sm">
-      + New Chat
-    </button>
+  <h1 class="text-lg font-medium text-white">SentinelNode</h1>
+
+  <button onclick="startNewChat()" 
+    class="mt-4 w-full text-left px-3 py-2 rounded-md bg-white text-black hover:bg-gray-200 text-sm">
+    + New Chat
+  </button>
+
+  <div class="mt-6 flex-1 flex flex-col">
+    <p class="text-xs text-gray-500 mb-2">Chat History</p>
+
+    <!-- 🔥 SAME ID -->
+    <div id="chat-history-home" class="chat-history space-y-2 text-sm"></div>
   </div>
+
+</div>
 
   <div class="flex-1 flex flex-col items-center justify-center px-6">
     <div class="max-w-lg w-full text-center space-y-8">
@@ -387,22 +396,25 @@ function startNewChat() {
 }
 // ================= HISTORY =================
 function renderChatHistory() {
-  const container = document.getElementById("chat-history");
-  container.innerHTML = "";
+  const chatContainer = document.getElementById("chat-history");
+  const homeContainer = document.getElementById("chat-history-home");
+
+  if (chatContainer) chatContainer.innerHTML = "";
+  if (homeContainer) homeContainer.innerHTML = "";
 
   chatSessions = JSON.parse(localStorage.getItem("chatSessions") || "[]");
 
   chatSessions.slice().reverse().forEach(chat => {
-    const div = document.createElement("div");
-
-    // 🔥 fallback for old chats
     let title = chat.title || chat.messages?.[0]?.text || "New Chat";
 
     if (title.length > 35) {
       title = title.substring(0, 35) + "...";
     }
 
-    div.className = `
+    const createItem = () => {
+      const div = document.createElement("div");
+
+      div.className = `
         p-2 
         bg-[#111111] 
         border border-[#1f1f1f]
@@ -413,14 +425,18 @@ function renderChatHistory() {
         text-gray-300
       `;
 
-    if (JSON.stringify(chat.messages) === JSON.stringify(currentChat)) {
+      if (JSON.stringify(chat.messages) === JSON.stringify(currentChat)) {
         div.classList.add("bg-[#1a1a1a]", "border-gray-500");
       }
-    div.innerText = title;
 
-    div.onclick = () => loadChat(chat);
+      div.innerText = title;
+      div.onclick = () => loadChat(chat);
 
-    container.appendChild(div);
+      return div;
+    };
+
+    if (chatContainer) chatContainer.appendChild(createItem());
+    if (homeContainer) homeContainer.appendChild(createItem());
   });
 }
 
