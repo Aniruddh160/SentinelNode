@@ -2,6 +2,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
+
 from src.github_loader import clone_repo
 from src.indexer import index_directory as run_indexer
 from src.query_engine import ask_question
@@ -18,6 +20,11 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="webapp/static"), name="static")
 templates = Jinja2Templates(directory="webapp/templates")
 
+
+graph_data = {
+    "nodes": [],
+    "edges": []
+}
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
@@ -50,7 +57,9 @@ async def index_directory_api(data: dict):
     graph = build_graph(path)
     with open("graph.json", "w") as f:
         json.dump(graph, f)
-
+    
+    graph_data["nodes"] = graph.get("nodes", [])
+    graph_data["edges"] = graph.get("edges", [])
 
     return {
         "status": "indexed",
@@ -76,6 +85,9 @@ async def clone_repo_api(data: dict):
         with open("graph.json", "w") as f:
             json.dump(graph, f)
 
+        graph_data["nodes"] = graph.get("nodes", [])
+        graph_data["edges"] = graph.get("edges", [])
+
         return {
             "status": "success",
             "message": "Repo cloned and indexed",
@@ -89,9 +101,4 @@ async def clone_repo_api(data: dict):
 
 @app.get("/get-graph")
 def get_graph():
-    try:
-        with open("graph.json", "r") as f:
-            graph = json.load(f)
-        return graph
-    except:
-        return {"nodes": [], "edges": []}
+    return graph_data
